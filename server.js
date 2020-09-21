@@ -12,7 +12,8 @@ app.get('/login', function (req, res) {
       querystring.stringify({
         response_type: 'code',
         client_id: process.env.SPOTIFY_CLIENT_ID,
-        scope: 'user-read-private user-read-email',
+        scope:
+          'streaming user-read-private user-read-email user-read-playback-state user-modify-playback-state user-library-read user-library-modify',
         redirect_uri,
       })
   );
@@ -41,7 +42,7 @@ app.get('/callback', function (req, res) {
   request.post(authOptions, function (error, response, body) {
     var access_token = body.access_token;
     console.log(body);
-    let uri = process.env.FRONTEND_URI || 'http://localhost:3000';
+    let uri = process.env.FRONTEND_URI || 'http://localhost:3000/playback';
     res.redirect(uri + '?access_token=' + access_token);
   });
 });
