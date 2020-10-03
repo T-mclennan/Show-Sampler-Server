@@ -1,7 +1,7 @@
 const express = require('express');
 const request = require('request');
 const querystring = require('querystring');
-// const bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 const events = require('./routes/api/events');
 
 const app = express();
@@ -9,9 +9,11 @@ const app = express();
 const redirect_uri =
   process.env.REDIRECT_URI || 'http://localhost:8888/callback';
 
+//Body parser middleware:
+app.use(bodyParser.json());
 app.use('/api/events', events);
 
-app.get('/login', function (req, res) {
+app.get('/login', (req, res) => {
   res.redirect(
     'https://accounts.spotify.com/authorize?' +
       querystring.stringify({
@@ -26,7 +28,7 @@ app.get('/login', function (req, res) {
 
 //Ticketmaster event search:
 
-app.get('/callback', function (req, res) {
+app.get('/callback', (req, res) => {
   let code = req.query.code || null;
   let authOptions = {
     url: 'https://accounts.spotify.com/api/token',
@@ -46,8 +48,8 @@ app.get('/callback', function (req, res) {
     },
     json: true,
   };
-  request.post(authOptions, function (error, response, body) {
-    var access_token = body.access_token;
+  request.post(authOptions, (error, response, body) => {
+    const access_token = body.access_token;
     console.log(body);
     let uri = process.env.FRONTEND_URI || 'http://localhost:3000/playback';
     res.redirect(uri + '?access_token=' + access_token);
