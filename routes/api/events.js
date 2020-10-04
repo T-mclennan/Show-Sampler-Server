@@ -21,18 +21,47 @@ router.get('/', (req, res) => {
       })
       .then(({ data }) => {
         const { events } = data._embedded;
-        event_list = events.map((e) => {
+        console.log('\n****    Attractions:    ****\n');
+        event_list = events.map((e, i) => {
+          const { name, dates, priceRanges, url, images, _embedded } = e;
+          // console.log(i, ' : ', _embedded.attractions[0].name);]
+          const artists = _embedded.attractions.filter(
+            (artist) => artist != null
+          );
+
+          const artist_list = artists.map(({ name }) => name);
+          const artist_data = artists.map(
+            ({
+              name,
+              classifications,
+              externalLinks,
+              images,
+              url,
+              upcomingEvents,
+            }) => {
+              return {
+                name: name,
+                genre: classifications[0].genre.name,
+                subGenre: classifications[0].subGenre.name,
+                links: externalLinks,
+                images: images,
+                ticket_link: url,
+              };
+            }
+          );
+
+          console.log(artist_data);
           return {
-            name: e.name,
-            dates: e.dates,
-            price_ranges: e.priceRanges,
-            event_url: e.url,
-            images: e.images,
-            artists: '',
+            name,
+            dates,
+            priceRanges,
+            url,
+            images,
+            artists: artist_list,
           };
         });
-        // console.log(events[0].name);
-        console.log(event_list);
+        // console.log(event_list[0]);
+        // console.log(event_list);
         res.send('fetching');
         // res.json(event_list);
       });
