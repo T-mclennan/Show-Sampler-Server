@@ -3,6 +3,7 @@ const request = require('request');
 const querystring = require('querystring');
 const bodyParser = require('body-parser');
 const events = require('./routes/api/events');
+const morgan = require('morgan');
 
 const app = express();
 
@@ -11,6 +12,10 @@ const redirect_uri =
 
 //Body parser middleware:
 app.use(bodyParser.json());
+
+//Morgan logging middleware:
+app.use(morgan('dev'));
+
 app.use('/api/events', events);
 
 app.get('/login', (req, res) => {
