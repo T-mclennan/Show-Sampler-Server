@@ -4,14 +4,16 @@ const querystring = require('querystring');
 const bodyParser = require('body-parser');
 const events = require('./routes/api/events');
 const morgan = require('morgan');
+const cors = require('cors');
 
 const app = express();
 
 const redirect_uri =
   process.env.REDIRECT_URI || 'http://localhost:8888/callback';
 
-//Body parser middleware:
+//Body parser / CORS middleware:
 app.use(bodyParser.json());
+app.use(cors());
 
 //Morgan logging middleware:
 app.use(morgan('dev'));

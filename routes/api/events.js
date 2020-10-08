@@ -6,7 +6,11 @@ const router = express.Router();
 // @desc: Get all events in time frame
 // @access: Public
 router.get('/', (req, res) => {
-  const { city } = req.body;
+  console.log('reqs');
+  console.log(req.query);
+  const { city } = req.query;
+  console.log('CITY NAME:');
+  console.log(city);
   const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
   try {
     axios
@@ -20,6 +24,7 @@ router.get('/', (req, res) => {
         },
       })
       .then(({ data }) => {
+        // console.log(data);
         try {
           const { events } = data._embedded;
 
@@ -73,15 +78,17 @@ router.get('/', (req, res) => {
           });
           // console.log(event_list);
           console.log('\n*********************\n');
-          // res.send(event_list);
           res.json(event_list);
-          // res.send('retrieved artists');
         } catch (e) {
           console.log(e);
           res.send(
             `Search for ${city} yielded no results. Please try different parameters.`
           );
         }
+      })
+      .catch((e) => {
+        console.error(e);
+        res.send('error: ' + e);
       });
 
     // console.log(data._embedded.events);
