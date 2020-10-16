@@ -4,22 +4,26 @@ const querystring = require('querystring');
 const bodyParser = require('body-parser');
 const events = require('./routes/api/events');
 const morgan = require('morgan');
+const helmet = require('helmet');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
 const redirect_uri =
   process.env.REDIRECT_URI || 'http://localhost:8888/callback';
 
-//Body parser / CORS middleware:
+//Middlewares:
 app.use(bodyParser.json());
 app.use(cors());
-
-//Morgan logging middleware:
+app.use(helmet());
+app.use(cookieParser());
 app.use(morgan('dev'));
 
 app.use('/api/events', events);
 
+// Spotify Auth-flow:
+// Can possibly use state variable to redirect route"
 app.get('/login', (req, res) => {
   res.redirect(
     'https://accounts.spotify.com/authorize?' +
@@ -33,11 +37,16 @@ app.get('/login', (req, res) => {
   );
 });
 
-//Ticketmaster event search:
-
 app.get('/callback', (req, res) => {
-  let code = req.query.code || null;
-  let authOptions = {
+  const error = req.query.error ? req.query.error : null;
+  if (error) {
+    console.log('Callback Error: ', error);
+    res.status(400);
+    res.redirect('http://localhost:3000/search?error=' + error);
+  }
+
+  const code = req.query.code || null;
+  const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
       code: code,
@@ -56,10 +65,45 @@ app.get('/callback', (req, res) => {
     json: true,
   };
   request.post(authOptions, (error, response, body) => {
-    const access_token = body.access_token;
+    const uri = process.env.FRONTEND_URI || 'http://localhost:3000/search';
+    res.cookie('refresh_token', body.refresh_token);
+    res.redirect(uri + '?access_token=' + body.access_token);
+  });
+});
+
+app.get('/refresh', (req, res) => {
+  const { endpoint } = req.query;
+  const refreshToken = req.cookies['refresh_token'];
+  console.log('Refresh Token:');
+  console.log(refreshToken);
+
+  const authOptions = {
+    url: 'https://accounts.spotify.com/api/token',
+    form: {
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    },
+    headers: {
+      Authorization:
+        'Basic ' +
+        new Buffer(
+          process.env.SPOTIFY_CLIENT_ID +
+            ':' +
+            process.env.SPOTIFY_CLIENT_SECRET
+        ).toString('base64'),
+    },
+    json: true,
+  };
+
+  request.post(authOptions, (error, response, body) => {
+    console.log('refresh callback: ');
     console.log(body);
-    let uri = process.env.FRONTEND_URI || 'http://localhost:3000/playback';
-    res.redirect(uri + '?access_token=' + access_token);
+    const cookie = body.refresh_token;
+    if (cookie) {
+      res.cookie('refresh_token', body.refresh_token);
+    }
+    let uri = process.env.FRONTEND_URI || 'http://localhost:3000/search';
+    res.redirect(uri + '?access_token=' + body.access_token);
   });
 });
 
@@ -67,4 +111,5 @@ const port = process.env.PORT || 8888;
 console.log(
   `Listening on port ${port}. Go /login to initiate authentication flow.`
 );
+
 app.listen(port);
