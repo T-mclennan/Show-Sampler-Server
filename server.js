@@ -71,41 +71,40 @@ app.get('/callback', (req, res) => {
   });
 });
 
-app.get('/refresh', (req, res) => {
-  const { endpoint } = req.query;
-  const refreshToken = req.cookies['refresh_token'];
-  console.log('Refresh Token:');
-  console.log(refreshToken);
+app.get(
+  '/refresh',
+  cors({ origin: 'http://localhost:3000', credentials: true }),
+  (req, res) => {
+    const { endpoint } = req.query;
+    const refreshToken = req.cookies['refresh_token'];
 
-  const authOptions = {
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    },
-    headers: {
-      Authorization:
-        'Basic ' +
-        new Buffer(
-          process.env.SPOTIFY_CLIENT_ID +
-            ':' +
-            process.env.SPOTIFY_CLIENT_SECRET
-        ).toString('base64'),
-    },
-    json: true,
-  };
+    const authOptions = {
+      url: 'https://accounts.spotify.com/api/token',
+      form: {
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      },
+      headers: {
+        Authorization:
+          'Basic ' +
+          new Buffer(
+            process.env.SPOTIFY_CLIENT_ID +
+              ':' +
+              process.env.SPOTIFY_CLIENT_SECRET
+          ).toString('base64'),
+      },
+      json: true,
+    };
 
-  request.post(authOptions, (error, response, body) => {
-    console.log('refresh callback: ');
-    console.log(body);
-    const cookie = body.refresh_token;
-    if (cookie) {
-      res.cookie('refresh_token', body.refresh_token);
-    }
-    let uri = process.env.FRONTEND_URI || 'http://localhost:3000/search';
-    res.redirect(uri + '?access_token=' + body.access_token);
-  });
-});
+    request.post(authOptions, (error, response, body) => {
+      const cookie = body.refresh_token;
+      if (cookie) {
+        res.cookie('refresh_token', body.refresh_token);
+      }
+      res.send(body.access_token);
+    });
+  }
+);
 
 const port = process.env.PORT || 8888;
 console.log(
