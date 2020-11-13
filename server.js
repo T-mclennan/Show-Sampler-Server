@@ -65,9 +65,12 @@ app.get('/callback', (req, res) => {
     json: true,
   };
   request.post(authOptions, (error, response, body) => {
+    const expiry = Date.now() + body.expires_in * 1000;
     const uri = process.env.FRONTEND_URI || 'http://localhost:3000/search';
     res.cookie('refresh_token', body.refresh_token);
-    res.redirect(uri + '?access_token=' + body.access_token);
+    res.redirect(
+      uri + '?access_token=' + body.access_token + '&expiration=' + expiry
+    );
   });
 });
 
@@ -98,10 +101,11 @@ app.get(
 
     request.post(authOptions, (error, response, body) => {
       const cookie = body.refresh_token;
+      const expiry = Date.now() + body.expires_in * 1000;
       if (cookie) {
         res.cookie('refresh_token', body.refresh_token);
       }
-      res.send(body.access_token);
+      res.send({ token: body.access_token, expiration: expiry });
     });
   }
 );

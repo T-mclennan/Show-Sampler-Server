@@ -8,24 +8,31 @@ const router = express.Router();
 router.get('/', (req, res) => {
   const { city } = req.query;
   const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
-  // try {
+  const currentDate = (new Date()).toISOString().slice(0,-5)+"Z";
+  console.log(currentDate)
   axios
     .get(url, {
       params: {
         city: city,
         classificationName: 'music',
-        // genreId: 'KnvZfZ7vAvF',
-        genreId: 'KnvZfZ7vAvt',
-        size: 200,
+        // genreId: 'KnvZfZ7vAvF', electronic
+        // genreId: 'KnvZfZ7vAvt', 
+        startDateTime: currentDate,
+        size: 30,
         apikey: process.env.TICKET_CONSUMER_KEY,
       },
     })
     .then(({ data }) => {
-      try {
+      if (data.page.totalElements < 1) {
+        console.log('Search Error: city not found.');
+        res.send({
+          error: {
+            status: 304,
+            msg: `Search for ${city} yielded no results. Please try different parameters.`,
+          },
+        });
+      } else {
         const { events } = data._embedded;
-
-        // console.log(events[0].name);
-
         console.log('\n******* Attractions: *******\n');
         console.log('Searched for: ', city);
         filter_list = events.filter((e) => {
@@ -73,25 +80,19 @@ router.get('/', (req, res) => {
             artist_data,
           };
         });
-        // console.log(event_list);
         console.log('\n*********************\n');
         res.json(event_list);
-      } catch (e) {
-        console.log(e);
-        res.send(
-          `Search for ${city} yielded no results. Please try different parameters.`
-        );
       }
     })
     .catch((e) => {
       console.error(e);
-      res.send('error: ' + e);
+      res.send({
+        error: {
+          msg: 'Error found in search. Please try agian.',
+          status: e,
+        },
+      });
     });
-
-  // console.log(data._embedded.events);
-  // } catch (error) {
-  //   console.log(error);
-  // }
 });
 
 module.exports = router;
