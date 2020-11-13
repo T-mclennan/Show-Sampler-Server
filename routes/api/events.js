@@ -15,8 +15,7 @@ router.get('/', (req, res) => {
       params: {
         city: city,
         classificationName: 'music',
-        // genreId: 'KnvZfZ7vAvF', electronic
-        // genreId: 'KnvZfZ7vAvt', 
+        // genreId: 'KnvZfZ7vAvF'
         startDateTime: currentDate,
         size: 30,
         apikey: process.env.TICKET_CONSUMER_KEY,
@@ -41,11 +40,15 @@ router.get('/', (req, res) => {
 
         event_list = filter_list.map((e, i) => {
           const { name, dates, priceRanges, url, images, _embedded } = e;
+
+          console.log(name)
           const artists = _embedded.attractions.filter(
-            (artist) => artist !== undefined
+            (artist) => artist !== undefined 
           );
 
-          const event_images = images.map((data) => data.url);
+          // const event_images = images.map((data) => data.url);
+          // console.log(images.url[8])
+
           console.log(i, ' : ', _embedded.attractions[0].name);
 
           const artist_list = artists.map(({ name }) => name);
@@ -64,7 +67,7 @@ router.get('/', (req, res) => {
                 classication: classifications[0],
                 subGenre: classifications[0].subGenre.name,
                 links: externalLinks,
-                images: images,
+                image: images[8].url,
                 ticket_link: url,
               };
             }
@@ -72,15 +75,33 @@ router.get('/', (req, res) => {
 
           return {
             event_name: name,
-            dates,
+            dates: [dates],
             price_ranges: priceRanges,
             event_url: url,
-            images: event_images,
+            image: images[8].url,
             artist_list,
             artist_data,
           };
         });
         console.log('\n*********************\n');
+
+        //Filter events with duplicate names, add additional date to the original object
+        const names_array = []
+        const delete_index = []
+        event_list.forEach((e, i) => {
+          const {event_name, dates} = e
+          const curr_index = names_array.findIndex(({name}) => name === event_name);
+          if (curr_index < 0) {
+            names_array.push({name: event_name, index: i})
+          } else {
+            const last_index = names_array[curr_index].index
+            event_list[last_index].dates.push(dates[0])
+            delete_index.push(i)
+          }
+        })
+
+        //works backwards through delete list, deleting duplicate objects
+        delete_index.slice().reverse().forEach(index => event_list.splice(index, 1))
         res.json(event_list);
       }
     })
